@@ -54,18 +54,16 @@ Public Class AccountController
     Public Async Function Register(model As RegisterViewModel) As Task(Of ActionResult)
         If ModelState.IsValid Then
             Dim user = New DscUser() With {
-                .UserName = model.Email,
-                .Email = model.Email
+                .UserName = model.Email
             }
 
             'Dim result = Await Me.UserManager.CreateAsync(user, model.Password)
             Dim result = Await UserManager.CreateAsync(user, model.Password)
 
-
-
             If result.Succeeded Then
                 Await SignInManager.SignInAsync(user, isPersistent:=False, rememberBrowser:=False)
 
+                Debug.Print("User Identity: " & user.UserName)
                 ' For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=320771
                 ' Send an email with this link
                 ' Dim code = Await UserManager.GenerateEmailConfirmationTokenAsync(user.Id)
@@ -100,24 +98,27 @@ Public Class AccountController
                 Return View(model)
             End If
 
-            ' This doesn't count login failures towards account lockout
-            ' To enable password failures to trigger account lockout, change to shouldLockout := True
-            Dim result = Await SignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, shouldLockout:=False)
-            Select Case result
-                Case SignInStatus.Success
-                    Return RedirectToLocal(returnUrl)
-                Case SignInStatus.LockedOut
-                    Return View("Lockout")
-                Case SignInStatus.RequiresVerification
-                    Return RedirectToAction("SendCode", New With {
-                        .ReturnUrl = returnUrl,
-                        .RememberMe = model.RememberMe
-                    })
-                Case Else
-                    ModelState.AddModelError("", "Invalid login attempt.")
-                    Return View(model)
-            End Select
-        End Function
+        ' This doesn't count login failures towards account lockout
+        ' To enable password failures to trigger account lockout, change to shouldLockout := True
+
+        Dim result = Await SignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, shouldLockout:=False)
+        Select Case result
+            Case SignInStatus.Success
+                Return RedirectToLocal(returnUrl)
+            Case SignInStatus.LockedOut
+                Return View("Lockout")
+            Case SignInStatus.RequiresVerification
+                Return RedirectToAction("SendCode", New With {
+                    .ReturnUrl = returnUrl,
+                    .RememberMe = model.RememberMe
+                })
+            Case Else
+                ModelState.AddModelError("", "Invalid login attempt.")
+                Return View(model)
+        End Select
+
+
+    End Function
 
 #Region "Helpers"
     ' Used for XSRF protection when adding external logins
